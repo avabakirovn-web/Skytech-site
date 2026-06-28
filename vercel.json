@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/foydalanuvchi interfeysi/$1" }
+  ]
+}
