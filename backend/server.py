@@ -1,7 +1,11 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -12,6 +16,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
+import html
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -28,9 +33,39 @@ JWT_EXPIRATION_HOURS = 24 * 7  # 7 days
 
 security = HTTPBearer()
 
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 # Create the main app
-app = FastAPI()
+app = FastAPI(
+    title="SkyTech E-commerce API",
+    description="Premium electronics store API",
+    version="1.0.0"
+)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 api_router = APIRouter(prefix="/api")
+
+# Sanitization helper to prevent XSS
+def sanitize_string(value: str) -> str:
+    """Escape HTML/JS to prevent XSS attacks"""
+    if not value:
+        return value
+    return html.escape(value.strip(), quote=True)
 
 # ===== MODELS =====
 
@@ -241,7 +276,17 @@ async def get_admin_user(user: User = Depends(get_current_user)) -> User:
 # ===== AUTH ROUTES =====
 
 @api_router.post("/auth/register", response_model=AuthResponse)
-async def register(data: UserRegister):
+@limiter.limit("5/minute")
+async def register(request: Request, data: UserRegister):
+    # Sanitize inputs to prevent XSS
+    data.full_name = sanitize_string(data.full_name)
+    if data.phone:
+        data.phone = sanitize_string(data.phone)
+    
+    # Validate password length
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Parol kamida 6 ta belgidan iborat bo'lishi kerak")
+    
     # Check if user exists
     existing = await db.users.find_one({'email': data.email}, {'_id': 0})
     if existing:
@@ -263,7 +308,8 @@ async def register(data: UserRegister):
     return AuthResponse(token=token, user=user)
 
 @api_router.post("/auth/login", response_model=AuthResponse)
-async def login(data: UserLogin):
+@limiter.limit("10/minute")
+async def login(request: Request, data: UserLogin):
     user_doc = await db.users.find_one({'email': data.email}, {'_id': 0})
     if not user_doc:
         raise HTTPException(status_code=401, detail="Email yoki parol noto'g'ri")
@@ -623,7 +669,11 @@ async def get_product_reviews(product_id: str):
     return reviews
 
 @api_router.post("/reviews", response_model=Review)
-async def create_review(data: ReviewCreate, user: User = Depends(get_current_user)):
+@limiter.limit("10/minute")
+async def create_review(request: Request, data: ReviewCreate, user: User = Depends(get_current_user)):
+    # Sanitize comment to prevent XSS
+    data.comment = sanitize_string(data.comment)
+    
     # Check if product exists
     product = await db.products.find_one({'id': data.product_id}, {'_id': 0})
     if not product:

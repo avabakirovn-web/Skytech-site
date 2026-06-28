@@ -1,19 +1,22 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import Logo from './Logo';
+import { useTranslation } from 'react-i18next';
 
 const Footer = () => {
+  const { t } = useTranslation();
   return (
-    <footer className="bg-[#0A2540] text-white mt-20">
+    <footer className="bg-[#0A2540] text-white mt-20 pb-16 lg:pb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              SkyTech
-            </h3>
+            <div className="mb-4 bg-white/10 rounded-2xl p-3 inline-block">
+              <Logo size="md" className="brightness-0 invert" />
+            </div>
             <p className="text-gray-300 mb-4">
-              Aqlli Texnologiya, Yaxshiroq Hayot
+              {t('footer.tagline')}
             </p>
             <div className="flex space-x-4">
               <a href="https://www.instagram.com/skytech_uz?igsh=OThnY3J0aXAzbnhq" target="_blank" rel="noopener noreferrer" className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all" data-testid="social-instagram">
@@ -33,26 +36,26 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">Tezkor havolalar</h4>
+            <h4 className="text-lg font-semibold mb-4">{t('footer.quick_links')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/products" className="text-gray-300 hover:text-white transition-all">
-                  Mahsulotlar
+                  {t('nav.products')}
                 </Link>
               </li>
               <li>
                 <Link to="/about" className="text-gray-300 hover:text-white transition-all">
-                  Biz haqimizda
+                  {t('footer.about')}
                 </Link>
               </li>
               <li>
                 <Link to="/contact" className="text-gray-300 hover:text-white transition-all">
-                  Aloqa
+                  {t('footer.contact_us')}
                 </Link>
               </li>
               <li>
                 <Link to="/faq" className="text-gray-300 hover:text-white transition-all">
-                  Savol-javob
+                  {t('footer.faq')}
                 </Link>
               </li>
             </ul>
@@ -60,26 +63,26 @@ const Footer = () => {
 
           {/* Customer Service */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">Mijozlarga xizmat</h4>
+            <h4 className="text-lg font-semibold mb-4">{t('footer.customer_service')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/shipping" className="text-gray-300 hover:text-white transition-all">
-                  Yetkazib berish
+                  {t('footer.shipping_info')}
                 </Link>
               </li>
               <li>
                 <Link to="/returns" className="text-gray-300 hover:text-white transition-all">
-                  Qaytarish siyosati
+                  {t('footer.returns')}
                 </Link>
               </li>
               <li>
                 <Link to="/warranty" className="text-gray-300 hover:text-white transition-all">
-                  Kafolat
+                  {t('footer.warranty')}
                 </Link>
               </li>
               <li>
                 <Link to="/privacy" className="text-gray-300 hover:text-white transition-all">
-                  Maxfiylik siyosati
+                  {t('footer.privacy')}
                 </Link>
               </li>
             </ul>
@@ -87,7 +90,7 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">Bog'lanish</h4>
+            <h4 className="text-lg font-semibold mb-4">{t('footer.contact')}</h4>
             <ul className="space-y-3">
               <li className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 text-[#3B82F6] flex-shrink-0 mt-1" />
@@ -112,12 +115,12 @@ const Footer = () => {
         {/* Newsletter */}
         <div className="mt-12 pt-8 border-t border-white/10">
           <div className="max-w-md mx-auto text-center">
-            <h4 className="text-lg font-semibold mb-2">Yangiliklar uchun obuna bo'ling</h4>
-            <p className="text-gray-300 mb-4">Eng so'nggi takliflar va yangiliklar haqida birinchilardan xabardor bo'ling</p>
+            <h4 className="text-lg font-semibold mb-2">{t('footer.newsletter_title')}</h4>
+            <p className="text-gray-300 mb-4">{t('footer.newsletter_subtitle')}</p>
             <form className="flex gap-2" data-testid="newsletter-form">
               <input
                 type="email"
-                placeholder="Email manzilingiz"
+                placeholder={t('footer.email_placeholder')}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none"
                 data-testid="newsletter-email"
               />
@@ -126,7 +129,7 @@ const Footer = () => {
                 className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl px-6 py-2.5 font-medium transition-all"
                 data-testid="newsletter-submit"
               >
-                Obuna
+                {t('footer.subscribe')}
               </button>
             </form>
           </div>
@@ -134,7 +137,7 @@ const Footer = () => {
 
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-white/10 text-center text-gray-400">
-          <p>&copy; 2024 SkyTech. Barcha huquqlar himoyalangan.</p>
+          <p>&copy; 2024 SkyTech. {t('footer.rights')}.</p>
         </div>
       </div>
     </footer>

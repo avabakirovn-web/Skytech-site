@@ -5,10 +5,12 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import ProductCard from '../components/ProductCard';
 import { Button } from '../components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Home = () => {
+  const { t } = useTranslation();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
@@ -108,27 +110,27 @@ const Home = () => {
               className="text-xs font-semibold tracking-[0.2em] uppercase text-[#3B82F6] mb-4 block"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              SkyTech - Aqlli texnologiya
+              {t('home.tagline')}
             </span>
             <h1
               className="text-5xl sm:text-6xl font-semibold tracking-tight leading-none text-[#0A2540] dark:text-white mb-6"
               style={{ fontFamily: 'Poppins, sans-serif' }}
               data-testid="hero-title"
             >
-              Texnologiya kelajagini kashf eting
+              {t('home.hero_title')}
             </h1>
             <p
               className="text-base leading-relaxed text-[#475569] dark:text-gray-300 mb-8 text-lg"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
-              Eng yaxshi gadjetlar eng yaxshi narxlarda
+              {t('home.hero_subtitle')}
             </p>
             <Link to="/products">
               <Button
                 className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-full px-8 py-6 text-lg font-medium transition-all shadow-[0_4px_14px_rgba(59,130,246,0.39)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.23)]"
                 data-testid="hero-shop-now-btn"
               >
-                Hozir xarid qilish
+                {t('home.shop_now')}
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>

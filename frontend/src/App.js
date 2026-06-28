@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
+import BottomNav from "@/components/BottomNav";
 import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
 import Products from "@/pages/Products";
@@ -38,6 +39,7 @@ function App() {
               </Routes>
               <Footer />
               <ChatWidget />
+              <BottomNav />
               <Toaster position="top-right" />
             </div>
           </CartProvider>

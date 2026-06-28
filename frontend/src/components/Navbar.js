@@ -5,22 +5,26 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from './ui/button';
+import Logo from './Logo';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { getCartCount } = useCart();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
   const categories = [
-    { id: 'smartphones', name_uz: 'Smartfonlar', path: '/products?category=smartphones' },
-    { id: 'laptops', name_uz: 'Noutbuklar', path: '/products?category=laptops' },
-    { id: 'smartwatches', name_uz: 'Aqlli soatlar', path: '/products?category=smartwatches' },
-    { id: 'headphones', name_uz: 'Naushniklar', path: '/products?category=headphones' },
-    { id: 'gaming', name_uz: 'O\'yin jihozlari', path: '/products?category=gaming' },
-    { id: 'accessories', name_uz: 'Aksessuarlar', path: '/products?category=accessories' }
+    { id: 'smartphones', name_uz: t('categories.smartphones'), path: '/products?category=smartphones' },
+    { id: 'laptops', name_uz: t('categories.laptops'), path: '/products?category=laptops' },
+    { id: 'smartwatches', name_uz: t('categories.smartwatches'), path: '/products?category=smartwatches' },
+    { id: 'headphones', name_uz: t('categories.headphones'), path: '/products?category=headphones' },
+    { id: 'gaming', name_uz: t('categories.gaming'), path: '/products?category=gaming' },
+    { id: 'accessories', name_uz: t('categories.accessories'), path: '/products?category=accessories' }
   ];
 
   const handleSearch = (e) => {
@@ -43,9 +47,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2" data-testid="nav-logo">
-            <div className="text-2xl font-bold text-[#3B82F6]" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              SkyTech
-            </div>
+            <Logo size="md" />
           </Link>
 
           {/* Search Bar - Desktop */}
@@ -53,10 +55,10 @@ const Navbar = () => {
             <div className="relative w-full">
               <input
                 type="text"
-                placeholder="Mahsulotlarni qidirish..."
+                placeholder={t('nav.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 pl-12 rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all"
+                className="w-full px-4 py-2.5 pl-12 rounded-xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-white/5 focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6]/20 outline-none transition-all text-[#0A2540] dark:text-white"
                 data-testid="search-input"
               />
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#475569]" />
@@ -64,7 +66,10 @@ const Navbar = () => {
           </form>
 
           {/* Right Icons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -122,7 +127,7 @@ const Navbar = () => {
                       className="block px-4 py-2 text-[#0A2540] dark:text-white hover:bg-black/5 dark:hover:bg-white/10"
                       data-testid="nav-dashboard"
                     >
-                      Mening profilim
+                      {t('nav.dashboard')}
                     </Link>
                     {user.is_admin && (
                       <Link
@@ -130,7 +135,7 @@ const Navbar = () => {
                         className="block px-4 py-2 text-[#0A2540] dark:text-white hover:bg-black/5 dark:hover:bg-white/10"
                         data-testid="nav-admin"
                       >
-                        Admin panel
+                        {t('nav.admin')}
                       </Link>
                     )}
                     <button
@@ -138,7 +143,7 @@ const Navbar = () => {
                       className="block w-full text-left px-4 py-2 text-[#EF4444] hover:bg-black/5 dark:hover:bg-white/10"
                       data-testid="nav-logout"
                     >
-                      Chiqish
+                      {t('nav.logout')}
                     </button>
                   </div>
                 </div>
@@ -146,7 +151,7 @@ const Navbar = () => {
             ) : (
               <Link to="/auth">
                 <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-full px-6" data-testid="nav-login">
-                  Kirish
+                  {t('nav.login')}
                 </Button>
               </Link>
             )}
