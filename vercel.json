@@ -1,5 +1,5 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/foydalanuvchi interfeysi/$1" }
-  ]
+  "buildCommand": "npm run build -- --legacy-peer-deps",
+  "installCommand": "npm install --legacy-peer-deps"
 }
+
