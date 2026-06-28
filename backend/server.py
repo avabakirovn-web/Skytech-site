@@ -393,13 +393,13 @@ async def google_session(request: Request, response: Response):
     user_doc = await db.users.find_one({'email': email}, {'_id': 0})
     
     if user_doc:
-        # Update existing user with Google info
+        # Update existing user with Google info (preserve original auth_provider)
         await db.users.update_one(
             {'email': email},
             {'$set': {
                 'picture': picture,
                 'full_name': name or user_doc.get('full_name', ''),
-                'auth_provider': 'google' if user_doc.get('auth_provider') == 'google' else user_doc.get('auth_provider', 'google')
+                'auth_provider': user_doc.get('auth_provider') or 'google'
             }}
         )
         user_doc = await db.users.find_one({'email': email}, {'_id': 0})
@@ -1085,6 +1085,18 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def startup_db():
+    """Create indexes on startup"""
+    try:
+        # TTL index for auto-expiring sessions
+        await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
+        # Lookup index
+        await db.user_sessions.create_index("session_token")
+        logger.info("Database indexes created")
+    except Exception as e:
+        logger.error(f"Index creation failed: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

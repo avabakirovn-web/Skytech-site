@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, ShoppingBag, Heart, MapPin, Bell, Package } from 'lucide-react';
+import { User, ShoppingBag, Heart, MapPin, Bell, Package, LogOut } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
@@ -9,7 +9,7 @@ import OrderTracking from '../components/OrderTracking';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const UserDashboard = () => {
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('orders');
   const [orders, setOrders] = useState([]);
@@ -105,6 +105,16 @@ const UserDashboard = () => {
                     <span className="font-medium">{tab.label}</span>
                   </button>
                 ))}
+
+                {/* Logout button */}
+                <button
+                  onClick={logout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[#EF4444] hover:bg-[#EF4444]/10 transition-all mt-2 border-t border-black/5 dark:border-white/10 pt-4"
+                  data-testid="dashboard-logout-btn"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-medium">Chiqish</span>
+                </button>
               </nav>
             </div>
           </div>

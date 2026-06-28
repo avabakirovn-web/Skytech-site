@@ -91,6 +91,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    // Redirect to home after logout
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    }
   };
 
   return (
