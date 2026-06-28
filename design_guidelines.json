@@ -1,0 +1,129 @@
+{
+  "project_info": {
+    "brand_name": "SkyTech",
+    "slogan": "Aqlli Texnologiya, Yaxshiroq Hayot",
+    "domain": "E-commerce (Premium Electronics)",
+    "language": "Uzbek (strictly)",
+    "design_context": "High-end product showcase & transactional e-commerce",
+    "instructions_to_main_agent": "CRITICAL: All UI text, placeholder text, and error messages MUST be in Uzbek. Follow the color palette strictly. Implement BENTO grids for marketing sections. The UI should resemble Apple's 'Liquid Glass' design trend (Glassmorphism 2.0). All interactive elements MUST have data-testid attributes."
+  },
+  "theme_and_archetype": {
+    "theme": "Light (Primary)",
+    "archetype": "Archetype 4 (Swiss & High-Contrast) + Crystal Glassmorphism",
+    "vibe": "Futuristic, premium, minimalistic, and cinematic."
+  },
+  "colors": {
+    "primary": "#3B82F6",
+    "primary_hover": "#2563EB",
+    "secondary": "#0A2540",
+    "background": "#FFFFFF",
+    "surface": "#F5F7FA",
+    "border": "rgba(10, 37, 64, 0.08)",
+    "text_primary": "#0A2540",
+    "text_secondary": "#475569",
+    "text_inverse": "#FFFFFF",
+    "success": "#10B981",
+    "danger": "#EF4444",
+    "accent_glow": "rgba(59, 130, 246, 0.5)"
+  },
+  "typography": {
+    "font_heading": "Poppins, sans-serif",
+    "font_body": "Inter, sans-serif",
+    "hierarchy": {
+      "h1": "text-5xl sm:text-6xl font-semibold tracking-tight leading-none text-[#0A2540]",
+      "h2": "text-3xl sm:text-4xl font-medium tracking-tight text-[#0A2540]",
+      "h3": "text-xl sm:text-2xl font-medium text-[#0A2540]",
+      "h4": "text-lg font-medium text-[#0A2540]",
+      "body": "text-base leading-relaxed text-[#475569]",
+      "body_small": "text-sm text-[#475569]",
+      "overline": "text-xs font-semibold tracking-[0.2em] uppercase text-[#3B82F6]"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous spacing. Use 2-3x more spacing than standard designs.",
+    "section_padding": "py-20 md:py-32 px-6 md:px-12",
+    "container_padding": "p-8 or p-12 for bordered containers to prevent text collision",
+    "grid_systems": {
+      "marketing_bento": "grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-8. Asymmetrical layout. Mix tall (row-span-2) and wide (col-span-2+) cards.",
+      "dashboard_control_room": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6. Dense, utilized space.",
+      "product_gallery": "Anti-grid organic layout for hero media, strict grid for specifications."
+    },
+    "alignment": "Left-align paragraphs, inputs, and dense content. Center hero headings only if visually balanced."
+  },
+  "surfaces_and_materials": {
+    "header_nav": "Crystal Glassmorphism: backdrop-blur-2xl bg-white/70 backdrop-saturate-150 border-b border-black/5. Z-index 50, sticky.",
+    "product_card_default": "bg-[#F5F7FA] rounded-3xl border border-black/5 transition-all duration-300",
+    "product_card_hover": "-translate-y-2 shadow-[0_12px_40px_rgba(10,37,64,0.08)] border-[#3B82F6]/20",
+    "dashboard_widget": "bg-white rounded-2xl border border-black/5 shadow-sm",
+    "glass_panel": "backdrop-blur-xl bg-white/60 border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.04)]"
+  },
+  "components_strategy": {
+    "buttons": {
+      "primary": "bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-full px-8 py-3 font-medium transition-all shadow-[0_4px_14px_rgba(59,130,246,0.39)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.23)]",
+      "secondary": "bg-[#0A2540] hover:bg-black text-white rounded-full px-8 py-3 font-medium transition-all",
+      "outline": "border border-[#0A2540]/20 hover:border-[#0A2540] text-[#0A2540] rounded-full px-8 py-3 font-medium transition-all"
+    },
+    "inputs": "Shadcn UI overrides: rounded-xl border-black/10 bg-white/50 focus:border-[#3B82F6] focus:ring-[#3B82F6]/20",
+    "badges": "bg-[#F5F7FA] text-[#0A2540] rounded-full px-3 py-1 text-xs font-medium border border-black/5",
+    "interactions": "Hover states must have higher contrast. Focus states must ring clearly. Add data-testid to ALL interactive elements (e.g., data-testid='add-to-cart-btn')."
+  },
+  "motion_and_animations": {
+    "page_transitions": "Smooth fade and slight Y-translate.",
+    "hover_effects": "Translate Y (-4px) + Shadow diffusion on product cards.",
+    "scroll_animations": "Staggered entrance for product lists using Framer Motion (initial opacity 0, y 20).",
+    "microinteractions": "Heart icon (wishlist) scale bounce on click. Cart icon slight wiggle on item add."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Minimal, clean lines, stroke-width 1.5. Use Phosphor Icons if duotone is needed for marketing."
+  },
+  "media": {
+    "hero_and_marketing": [
+      {
+        "url": "https://images.unsplash.com/photo-1426024084828-5da21e13f5dc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwzfHxwcmVtaXVtJTIwc21hcnRwaG9uZSUyMGxhcHRvcCUyMHRlY2glMjBnYWRnZXRzfGVufDB8fHx8MTc4MjYyNzYxMnww&ixlib=rb-4.1.0&q=85",
+        "description": "MacBook Pro beside iPad and iPhone turned on - Use for Hero Section banner or Main Category Showcase"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1636115305669-9096bffe87fd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHw0fHxwcmVtaXVtJTIwc21hcnRwaG9uZSUyMGxhcHRvcCUyMHRlY2glMjBnYWRnZXRzfGVufDB8fHx8MTc4MjYyNzYxMnww&ixlib=rb-4.1.0&q=85",
+        "description": "White Apple laptop and accessories top down - Use for 'Workspace / Ecosystem' promotional section"
+      }
+    ],
+    "products": [
+      {
+        "url": "https://images.unsplash.com/photo-1589410978622-a56c8715a0f1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHw0fHxzbWFydHdhdGNoJTIwaGVhZHBob25lcyUyMGdhbWluZyUyMHRlY2h8ZW58MHx8fHwxNzgyNjI3NjEyfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Smartwatch with Earbuds on keyboard - Use for Smart Watches / Audio category or Featured Product"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1610041321327-b794c052db27?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwxfHxzbWFydHdhdGNoJTIwaGVhZHBob25lcyUyMGdhbWluZyUyMHRlY2h8ZW58MHx8fHwxNzgyNjI3NjEyfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Gaming Headphones - Use for Gaming or Audio Category"
+      }
+    ],
+    "payments_and_logos": [
+      {
+        "url": "https://images.unsplash.com/photo-1609429019995-8c40f49535a5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHwyfHxwYXltZW50JTIwY3JlZGl0JTIwY2FyZCUyMGxvZ29zfGVufDB8fHx8MTc4MjYyNzYxMnww&ixlib=rb-4.1.0&q=85",
+        "description": "Visa Card on laptop - Use for Checkout or Secure Payment section background"
+      }
+    ]
+  },
+  "translations_dictionary": {
+    "Home": "Bosh sahifa",
+    "Shop": "Do'kon",
+    "Categories": "Kategoriyalar",
+    "Smartphones": "Smartfonlar",
+    "Laptops": "Noutbuklar",
+    "Smart Watches": "Aqlli soatlar",
+    "Accessories": "Aksessuarlar",
+    "Search": "Qidirish",
+    "Cart": "Savatcha",
+    "Wishlist": "Sevimlilar",
+    "Account": "Hisob",
+    "Shop Now": "Hozir xarid qilish",
+    "Add to Cart": "Savatchaga qo'shish",
+    "Buy Now": "Hozir sotib olish",
+    "Checkout": "Rasmiylashtirish",
+    "Total": "Jami",
+    "Reviews": "Sharhlar",
+    "New Arrivals": "Yangi kelganlar",
+    "Best Sellers": "Eng ko'p sotilganlar"
+  }
+}
