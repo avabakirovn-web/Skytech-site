@@ -11,7 +11,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Checkout = () => {
   const { token, user } = useAuth();
-  const { cart, fetchCart } = useCart();
+  const { cart, fetchCart, loading: cartLoading } = useCart();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [products, setProducts] = useState([]);
@@ -20,6 +20,7 @@ const Checkout = () => {
   const [orderId, setOrderId] = useState(null);
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
+  const [cartChecked, setCartChecked] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
@@ -36,19 +37,33 @@ const Checkout = () => {
       navigate('/auth');
       return;
     }
-    loadCart();
-  }, [token, cart]);
+    // Re-fetch cart to ensure it's up to date
+    fetchCart().then(() => setCartChecked(true));
+  }, [token]);
 
-  const loadCart = async () => {
+  useEffect(() => {
+    if (cart.items && cart.items.length > 0) {
+      loadProducts();
+    } else {
+      setLoading(false);
+    }
+  }, [cart.items]);
+
+  useEffect(() => {
+    // Wait for both cart context and our local load to finish before redirecting
+    if (cartChecked && !loading && !cartLoading && (!cart.items || cart.items.length === 0) && !orderPlaced) {
+      navigate('/cart');
+    }
+  }, [loading, cartLoading, cartChecked, cart.items, orderPlaced]);
+
+  const loadProducts = async () => {
     try {
       setLoading(true);
-      if (cart.items && cart.items.length > 0) {
-        const productPromises = cart.items.map(item =>
-          axios.get(`${API}/products/${item.product_id}`)
-        );
-        const responses = await Promise.all(productPromises);
-        setProducts(responses.map(res => res.data));
-      }
+      const productPromises = cart.items.map(item =>
+        axios.get(`${API}/products/${item.product_id}`)
+      );
+      const responses = await Promise.all(productPromises);
+      setProducts(responses.map(res => res.data));
     } catch (error) {
       console.error('Xato:', error);
     } finally {
@@ -148,8 +163,7 @@ const Checkout = () => {
   }
 
   if (!cart.items || cart.items.length === 0) {
-    navigate('/cart');
-    return null;
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3B82F6]"></div></div>;
   }
 
   const steps = [

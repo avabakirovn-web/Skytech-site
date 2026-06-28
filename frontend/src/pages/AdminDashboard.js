@@ -68,7 +68,7 @@ const AdminDashboard = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await axios.put(
-        `${API}/admin/orders/${orderId}/status?status=${newStatus}`,
+        `${API}/admin/orders/${orderId}/status?new_status=${newStatus}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

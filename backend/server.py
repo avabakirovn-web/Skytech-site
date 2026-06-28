@@ -729,10 +729,10 @@ async def get_all_orders(admin: User = Depends(get_admin_user)):
     return orders
 
 @api_router.put("/admin/orders/{order_id}/status")
-async def update_order_status(order_id: str, status: str, admin: User = Depends(get_admin_user)):
+async def update_order_status(order_id: str, new_status: str, admin: User = Depends(get_admin_user)):
     result = await db.orders.update_one(
         {'id': order_id},
-        {'$set': {'status': status}}
+        {'$set': {'status': new_status}}
     )
     
     if result.modified_count == 0:
