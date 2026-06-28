@@ -70,6 +70,142 @@ class TestAuth:
         r = s.get(f"{API}/auth/me")
         assert r.status_code in (401, 403)
 
+    def test_me_returns_picture_and_provider_fields(self, user_token):
+        # User model now must include picture (optional) and auth_provider
+        r = requests.get(f"{API}/auth/me", headers=h(user_token))
+        assert r.status_code == 200
+        data = r.json()
+        assert "auth_provider" in data
+        assert data["auth_provider"] in ("email", "google")
+        assert "picture" in data  # may be None for email users
+        assert "is_admin" in data
+        assert data["email"] == USER_EMAIL
+
+
+# ===== Google OAuth endpoint contract =====
+class TestGoogleOAuth:
+    def test_google_session_missing_header(self):
+        r = requests.post(f"{API}/auth/google/session")
+        assert r.status_code == 400
+        assert "X-Session-ID" in r.json().get("detail", "")
+
+    def test_google_session_invalid_session_id(self):
+        r = requests.post(
+            f"{API}/auth/google/session",
+            headers={"X-Session-ID": "invalid-session-id-xyz-12345"}
+        )
+        # Should be 401 (Emergent returns non-200) or 500 if upstream throws
+        assert r.status_code in (401, 500), r.text
+
+    def test_logout_endpoint_exists(self):
+        r = requests.post(f"{API}/auth/logout")
+        assert r.status_code == 200
+        assert r.json().get("success") is True
+
+    def test_cookie_based_auth_for_me(self):
+        """Inject session into Mongo and verify /me works via cookie"""
+        from pymongo import MongoClient
+        from datetime import datetime, timezone, timedelta
+        import uuid as _uuid
+
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        db_name = os.environ.get('DB_NAME', 'test_database')
+        mc = MongoClient(mongo_url)
+        db = mc[db_name]
+
+        # Create test user
+        test_user_id = f"TEST_oauth_{_uuid.uuid4().hex[:8]}"
+        test_email = f"TEST_oauth_{_uuid.uuid4().hex[:6]}@skytech.uz"
+        session_token = f"TEST_sess_{_uuid.uuid4().hex}"
+        db.users.insert_one({
+            "id": test_user_id,
+            "email": test_email,
+            "full_name": "OAuth Test",
+            "picture": "https://example.com/p.jpg",
+            "auth_provider": "google",
+            "is_admin": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        db.user_sessions.insert_one({
+            "user_id": test_user_id,
+            "session_token": session_token,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+
+        try:
+            # Use cookie-based auth
+            r = requests.get(f"{API}/auth/me", cookies={"session_token": session_token})
+            assert r.status_code == 200, r.text
+            data = r.json()
+            assert data["email"] == test_email
+            assert data["auth_provider"] == "google"
+            assert data["picture"] == "https://example.com/p.jpg"
+
+            # Logout clears session
+            r = requests.post(f"{API}/auth/logout", cookies={"session_token": session_token})
+            assert r.status_code == 200
+            remaining = db.user_sessions.find_one({"session_token": session_token})
+            assert remaining is None
+
+            # After logout, cookie no longer works
+            r = requests.get(f"{API}/auth/me", cookies={"session_token": session_token})
+            assert r.status_code == 401
+        finally:
+            db.users.delete_one({"id": test_user_id})
+            db.user_sessions.delete_one({"session_token": session_token})
+
+    def test_auth_gated_endpoint_works_with_cookie(self):
+        """Verify cart endpoint accepts session_token cookie"""
+        from pymongo import MongoClient
+        from datetime import datetime, timezone, timedelta
+        import uuid as _uuid
+
+        mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+        db_name = os.environ.get('DB_NAME', 'test_database')
+        mc = MongoClient(mongo_url)
+        db = mc[db_name]
+
+        test_user_id = f"TEST_cookie_{_uuid.uuid4().hex[:8]}"
+        test_email = f"TEST_cookie_{_uuid.uuid4().hex[:6]}@skytech.uz"
+        session_token = f"TEST_csess_{_uuid.uuid4().hex}"
+        db.users.insert_one({
+            "id": test_user_id, "email": test_email, "full_name": "Cookie Test",
+            "auth_provider": "google", "is_admin": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        db.user_sessions.insert_one({
+            "user_id": test_user_id, "session_token": session_token,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+
+        try:
+            # Cart endpoint (auth-gated) should work with just cookie, no Bearer
+            r = requests.get(f"{API}/cart", cookies={"session_token": session_token})
+            assert r.status_code == 200, r.text
+            assert r.json()["user_id"] == test_user_id
+
+            # Wishlist endpoint
+            r = requests.get(f"{API}/wishlist", cookies={"session_token": session_token})
+            assert r.status_code == 200
+
+            # Orders endpoint
+            r = requests.get(f"{API}/orders", cookies={"session_token": session_token})
+            assert r.status_code == 200
+        finally:
+            db.users.delete_one({"id": test_user_id})
+            db.user_sessions.delete_one({"session_token": session_token})
+            db.carts.delete_one({"user_id": test_user_id})
+            db.wishlists.delete_one({"user_id": test_user_id})
+
+    def test_jwt_bearer_still_works(self, user_token):
+        """Backward compatibility: JWT Bearer must still work for all endpoints"""
+        endpoints = ["/auth/me", "/cart", "/wishlist", "/orders"]
+        for ep in endpoints:
+            r = requests.get(f"{API}{ep}", headers=h(user_token))
+            assert r.status_code == 200, f"{ep} failed: {r.status_code} {r.text}"
+
 
 # ===== Products & Categories =====
 class TestProducts:

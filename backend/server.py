@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request, Response, Cookie
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import httpx
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
@@ -86,6 +87,8 @@ class User(BaseModel):
     email: str
     full_name: str
     phone: Optional[str] = None
+    picture: Optional[str] = None
+    auth_provider: str = "email"  # email or google
     is_admin: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -249,24 +252,49 @@ def create_token(user_id: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        user_id = payload.get('user_id')
-        
-        user_doc = await db.users.find_one({'id': user_id}, {'_id': 0})
-        if not user_doc:
-            raise HTTPException(status_code=401, detail="Foydalanuvchi topilmadi")
-        
-        if isinstance(user_doc.get('created_at'), str):
-            user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
-        
-        return User(**user_doc)
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token muddati tugagan")
-    except Exception:
-        raise HTTPException(status_code=401, detail="Noto'g'ri token")
+async def get_current_user(request: Request) -> User:
+    """Get current user from session_token cookie OR JWT Bearer token (supports both auth methods)"""
+    user_id = None
+    
+    # 1. Try session_token from cookie (Google OAuth)
+    session_token = request.cookies.get('session_token')
+    if session_token:
+        session_doc = await db.user_sessions.find_one({'session_token': session_token}, {'_id': 0})
+        if session_doc:
+            # Check expiry (timezone-aware)
+            expires_at = session_doc.get('expires_at')
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at and expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at and expires_at < datetime.now(timezone.utc):
+                raise HTTPException(status_code=401, detail="Sessiya muddati tugagan")
+            user_id = session_doc.get('user_id')
+    
+    # 2. Fallback: JWT Bearer token (email/password auth)
+    if not user_id:
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header.replace('Bearer ', '')
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                user_id = payload.get('user_id')
+            except jwt.ExpiredSignatureError:
+                raise HTTPException(status_code=401, detail="Token muddati tugagan")
+            except Exception:
+                raise HTTPException(status_code=401, detail="Noto'g'ri token")
+    
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Avtorizatsiya kerak")
+    
+    user_doc = await db.users.find_one({'id': user_id}, {'_id': 0})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Foydalanuvchi topilmadi")
+    
+    if isinstance(user_doc.get('created_at'), str):
+        user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    
+    return User(**user_doc)
 
 async def get_admin_user(user: User = Depends(get_current_user)) -> User:
     if not user.is_admin:
@@ -329,6 +357,106 @@ async def login(request: Request, data: UserLogin):
 @api_router.get("/auth/me", response_model=User)
 async def get_me(user: User = Depends(get_current_user)):
     return user
+
+# ===== GOOGLE OAUTH (Emergent Managed) =====
+
+@api_router.post("/auth/google/session")
+async def google_session(request: Request, response: Response):
+    """Exchange Emergent session_id for our session_token cookie + create/update user"""
+    session_id = request.headers.get('X-Session-ID')
+    if not session_id:
+        raise HTTPException(status_code=400, detail="X-Session-ID header required")
+    
+    # Call Emergent Auth API
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(
+                'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data',
+                headers={'X-Session-ID': session_id},
+                timeout=10.0
+            )
+            if resp.status_code != 200:
+                raise HTTPException(status_code=401, detail="Google sessiya yaroqsiz")
+            data = resp.json()
+        except httpx.HTTPError:
+            raise HTTPException(status_code=500, detail="Auth xizmati bilan bog'lanishda xato")
+    
+    email = data.get('email')
+    name = data.get('name', '')
+    picture = data.get('picture')
+    session_token = data.get('session_token')
+    
+    if not email or not session_token:
+        raise HTTPException(status_code=400, detail="Yaroqsiz sessiya ma'lumotlari")
+    
+    # Find or create user (using email as unique key)
+    user_doc = await db.users.find_one({'email': email}, {'_id': 0})
+    
+    if user_doc:
+        # Update existing user with Google info
+        await db.users.update_one(
+            {'email': email},
+            {'$set': {
+                'picture': picture,
+                'full_name': name or user_doc.get('full_name', ''),
+                'auth_provider': 'google' if user_doc.get('auth_provider') == 'google' else user_doc.get('auth_provider', 'google')
+            }}
+        )
+        user_doc = await db.users.find_one({'email': email}, {'_id': 0})
+        user_id = user_doc['id']
+    else:
+        # Create new user
+        new_user = User(
+            email=email,
+            full_name=name or email.split('@')[0],
+            picture=picture,
+            auth_provider='google'
+        )
+        new_doc = new_user.model_dump()
+        new_doc['created_at'] = new_doc['created_at'].isoformat()
+        await db.users.insert_one(new_doc)
+        user_id = new_user.id
+        user_doc = new_doc
+    
+    # Create session record (7 days expiry)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    await db.user_sessions.insert_one({
+        'user_id': user_id,
+        'session_token': session_token,
+        'expires_at': expires_at.isoformat(),
+        'created_at': datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Set httpOnly cookie
+    response.set_cookie(
+        key='session_token',
+        value=session_token,
+        max_age=7 * 24 * 60 * 60,
+        httponly=True,
+        secure=True,
+        samesite='none',
+        path='/'
+    )
+    
+    if isinstance(user_doc.get('created_at'), str):
+        user_doc['created_at'] = datetime.fromisoformat(user_doc['created_at'])
+    
+    return {'user': User(**user_doc).model_dump(mode='json'), 'success': True}
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    """Clear session and cookie"""
+    session_token = request.cookies.get('session_token')
+    if session_token:
+        await db.user_sessions.delete_one({'session_token': session_token})
+    
+    response.delete_cookie(
+        key='session_token',
+        path='/',
+        samesite='none',
+        secure=True
+    )
+    return {'success': True, 'message': "Tizimdan chiqildi"}
 
 # ===== PRODUCT ROUTES =====
 
@@ -945,8 +1073,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origin_regex=".*",
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Configure logging
