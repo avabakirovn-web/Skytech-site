@@ -176,8 +176,8 @@ class Review(BaseModel):
 
 class ReviewCreate(BaseModel):
     product_id: str
-    rating: int
-    comment: str
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(min_length=3, max_length=500)
 
 # Chat Models
 class ChatMessage(BaseModel):
