@@ -4,6 +4,7 @@ import { User, ShoppingBag, Heart, MapPin, Bell, Package } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
+import OrderTracking from '../components/OrderTracking';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -144,6 +145,12 @@ const UserDashboard = () => {
                                 </div>
                               ))}
                             </div>
+
+                            {/* Order Tracking */}
+                            <div className="mb-4">
+                              <OrderTracking status={order.status} createdAt={order.created_at} />
+                            </div>
+
                             <div className="flex justify-between items-center pt-4 border-t border-black/5 dark:border-white/10">
                               <span className="text-[#475569] dark:text-gray-300">Jami:</span>
                               <span className="text-xl font-bold text-[#3B82F6]">{order.total.toLocaleString()} so'm</span>

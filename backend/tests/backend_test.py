@@ -258,11 +258,71 @@ class TestChat:
 class TestReviews:
     def test_create_review_recalcs_rating(self, s, user_token):
         pid = s.get(f"{API}/products").json()[0]["id"]
-        r = s.post(f"{API}/reviews", json={"product_id": pid, "rating": 5, "comment": "TEST review"}, headers=h(user_token))
-        assert r.status_code == 200
+        before = s.get(f"{API}/products/{pid}").json()
+        before_count = before.get("reviews_count", 0)
+
+        r = s.post(f"{API}/reviews", json={"product_id": pid, "rating": 5, "comment": "TEST review excellent"}, headers=h(user_token))
+        assert r.status_code == 200, r.text
+        rv = r.json()
+        assert rv["rating"] == 5
+        assert rv["comment"] == "TEST review excellent"
+        assert rv["product_id"] == pid
+        assert rv["user_name"]
+
         # verify product rating updated
         prod = s.get(f"{API}/products/{pid}").json()
-        assert prod["reviews_count"] >= 1
+        assert prod["reviews_count"] == before_count + 1
+        assert 1 <= prod["rating"] <= 5
+
+    def test_get_product_reviews(self, s, user_token):
+        pid = s.get(f"{API}/products").json()[0]["id"]
+        # ensure at least one review
+        s.post(f"{API}/reviews", json={"product_id": pid, "rating": 4, "comment": "TEST list"}, headers=h(user_token))
+        r = s.get(f"{API}/reviews/product/{pid}")
+        assert r.status_code == 200
+        revs = r.json()
+        assert isinstance(revs, list)
+        assert len(revs) >= 1
+        assert all(rv["product_id"] == pid for rv in revs)
+
+    def test_review_requires_auth(self, s):
+        r = s.post(f"{API}/reviews", json={"product_id": "x", "rating": 5, "comment": "x"})
+        assert r.status_code in (401, 403)
+
+    def test_review_invalid_product(self, s, user_token):
+        r = s.post(f"{API}/reviews", json={"product_id": "nonexistent-xyz", "rating": 5, "comment": "x"}, headers=h(user_token))
+        assert r.status_code == 404
+
+
+# ===== AI Recommendations =====
+class TestRecommendations:
+    def test_recommendations_for_product(self, s):
+        pid = s.get(f"{API}/products").json()[0]["id"]
+        r = s.get(f"{API}/recommendations/{pid}", timeout=60)
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert "recommendations" in data
+        assert "reasoning" in data
+        assert isinstance(data["recommendations"], list)
+        # Either LLM returned items or fallback algorithm did
+        # Should be 0-4 recommendations
+        assert 0 <= len(data["recommendations"]) <= 4
+        # If non-empty, each item should have product fields and NOT be the queried product
+        for rec in data["recommendations"]:
+            assert rec["id"] != pid
+            assert "name_uz" in rec
+            assert "price" in rec
+
+    def test_recommendations_product_not_found(self, s):
+        r = s.get(f"{API}/recommendations/nonexistent-id-xyz", timeout=30)
+        assert r.status_code == 404
+
+    def test_recommendations_returns_reasoning_string(self, s):
+        pid = s.get(f"{API}/products").json()[0]["id"]
+        r = s.get(f"{API}/recommendations/{pid}", timeout=60)
+        assert r.status_code == 200
+        data = r.json()
+        assert isinstance(data["reasoning"], str)
 
 
 # ===== Admin =====
@@ -312,7 +372,7 @@ class TestAdmin:
             "payment_method": "cash"
         }, headers=h(user_token)).json()
         oid = order["id"]
-        r = s.put(f"{API}/admin/orders/{oid}/status", params={"status": "processing"}, headers=h(admin_token))
+        r = s.put(f"{API}/admin/orders/{oid}/status", params={"new_status": "processing"}, headers=h(admin_token))
         assert r.status_code == 200
         # verify
         updated = s.get(f"{API}/orders/{oid}", headers=h(admin_token)).json()

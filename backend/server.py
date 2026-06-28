@@ -774,6 +774,120 @@ async def validate_coupon(code: str, subtotal: float):
         'message': f"{coupon['discount_percent']}% chegirma qo'llanildi"
     }
 
+# ===== AI RECOMMENDATIONS =====
+
+@api_router.get("/recommendations/{product_id}")
+async def get_ai_recommendations(product_id: str):
+    """Get AI-powered product recommendations based on current product"""
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    import json
+    import re
+    
+    # Get current product
+    current_product = await db.products.find_one({'id': product_id}, {'_id': 0})
+    if not current_product:
+        raise HTTPException(status_code=404, detail="Mahsulot topilmadi")
+    
+    # Get all other products
+    all_products = await db.products.find(
+        {'id': {'$ne': product_id}},
+        {'_id': 0, 'id': 1, 'name_uz': 1, 'category': 1, 'price': 1, 'discount_price': 1}
+    ).to_list(50)
+    
+    if not all_products:
+        return {'recommendations': [], 'reasoning': ''}
+    
+    # Build product list for LLM
+    products_text = "\n".join([
+        f"- ID: {p['id']}, Nomi: {p['name_uz']}, Kategoriya: {p['category']}, Narx: {p.get('discount_price') or p['price']} so'm"
+        for p in all_products
+    ])
+    
+    system_message = """Sen SkyTech elektronika do'koni uchun aqlli mahsulot tavsiyachisisan.
+Foydalanuvchi qarayotgan mahsulotga asoslanib, mijozga eng mos 4 ta mahsulotni tavsiya qil.
+Tavsiyalar bir-birini to'ldiruvchi yoki muqobil mahsulotlar bo'lishi kerak.
+Faqat JSON formatida javob ber: {"product_ids": ["id1", "id2", "id3", "id4"], "reasoning": "qisqa izoh o'zbek tilida"}"""
+    
+    user_text = f"""Foydalanuvchi quyidagi mahsulotni ko'rmoqda:
+Nomi: {current_product['name_uz']}
+Kategoriya: {current_product['category']}
+Narxi: {current_product.get('discount_price') or current_product['price']} so'm
+
+Mavjud boshqa mahsulotlar:
+{products_text}
+
+Ushbu mijozga eng mos 4 ta mahsulot ID'sini tanlang va sababini qisqa o'zbek tilida tushuntiring."""
+    
+    try:
+        chat = LlmChat(
+            api_key=os.environ['EMERGENT_LLM_KEY'],
+            session_id=f"recommend-{product_id}",
+            system_message=system_message
+        ).with_model("openai", "gpt-5.2")
+        
+        response = await chat.send_message(UserMessage(text=user_text))
+        
+        # Extract JSON from response
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group())
+            recommended_ids = data.get('product_ids', [])
+            reasoning = data.get('reasoning', '')
+        else:
+            recommended_ids = []
+            reasoning = ''
+        
+        # Get full product details
+        recommended_products = []
+        for rec_id in recommended_ids[:4]:
+            prod = await db.products.find_one({'id': rec_id}, {'_id': 0})
+            if prod:
+                if isinstance(prod.get('created_at'), str):
+                    prod['created_at'] = datetime.fromisoformat(prod['created_at'])
+                recommended_products.append(prod)
+        
+        return {
+            'recommendations': recommended_products,
+            'reasoning': reasoning
+        }
+    except Exception as e:
+        logger.error(f"AI recommendation error: {e}")
+        # Fallback: smart algorithm - same category first, then featured/best-seller, then similar price
+        current_price = current_product.get('discount_price') or current_product['price']
+        
+        # Get same category products
+        category_products = await db.products.find(
+            {'id': {'$ne': product_id}, 'category': current_product['category']},
+            {'_id': 0}
+        ).to_list(50)
+        
+        # Get other featured/best-seller products if needed
+        if len(category_products) < 4:
+            other_featured = await db.products.find(
+                {'id': {'$ne': product_id}, 'category': {'$ne': current_product['category']},
+                 '$or': [{'is_featured': True}, {'is_best_seller': True}]},
+                {'_id': 0}
+            ).to_list(20)
+            category_products.extend(other_featured)
+        
+        # Sort by similarity (price closeness, then rating)
+        def similarity_score(p):
+            p_price = p.get('discount_price') or p['price']
+            price_diff = abs(p_price - current_price) / max(current_price, 1)
+            return (price_diff, -p.get('rating', 0))
+        
+        category_products.sort(key=similarity_score)
+        fallback = category_products[:4]
+        
+        for p in fallback:
+            if isinstance(p.get('created_at'), str):
+                p['created_at'] = datetime.fromisoformat(p['created_at'])
+        
+        return {
+            'recommendations': fallback,
+            'reasoning': "Sizga eng mos mahsulotlar: o'xshash kategoriya va narx oralig'idan tanlandi"
+        }
+
 # Include the router in the main app
 app.include_router(api_router)
 

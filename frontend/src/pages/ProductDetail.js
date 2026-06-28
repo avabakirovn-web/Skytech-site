@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import ProductCard from '../components/ProductCard';
+import ReviewForm from '../components/ReviewForm';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -18,13 +19,30 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [aiRecommendations, setAiRecommendations] = useState([]);
+  const [aiReasoning, setAiReasoning] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
     fetchProduct();
+    fetchAIRecommendations();
   }, [id]);
+
+  const fetchAIRecommendations = async () => {
+    try {
+      setAiLoading(true);
+      const res = await axios.get(`${API}/recommendations/${id}`);
+      setAiRecommendations(res.data.recommendations || []);
+      setAiReasoning(res.data.reasoning || '');
+    } catch (error) {
+      console.error('AI tavsiyalar xato:', error);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const fetchProduct = async () => {
     try {
@@ -263,6 +281,97 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <section className="py-12 border-t border-black/5 dark:border-white/10" data-testid="reviews-section">
+          <h2
+            className="text-2xl sm:text-3xl font-medium text-[#0A2540] dark:text-white mb-8"
+            style={{ fontFamily: 'Poppins, sans-serif' }}
+          >
+            Mijozlar sharhlari ({reviews.length})
+          </h2>
+
+          {/* Add Review Form */}
+          {user && <ReviewForm productId={product.id} onSubmit={fetchProduct} />}
+          {!user && (
+            <div className="bg-[#F5F7FA] dark:bg-[#0A2540]/20 rounded-2xl p-6 mb-8 text-center">
+              <p className="text-[#475569] dark:text-gray-300 mb-3">Sharh qoldirish uchun tizimga kiring</p>
+              <Button onClick={() => navigate('/auth')} className="bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-full px-6" data-testid="login-to-review-btn">
+                Tizimga kirish
+              </Button>
+            </div>
+          )}
+
+          {/* Reviews List */}
+          {reviews.length === 0 ? (
+            <div className="text-center py-12 bg-[#F5F7FA] dark:bg-[#0A2540]/20 rounded-2xl">
+              <Star className="w-16 h-16 text-[#475569] mx-auto mb-3" />
+              <p className="text-[#475569] dark:text-gray-300">Hali sharhlar yo'q. Birinchi bo'lib sharh qoldiring!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <div key={review.id} className="bg-[#F5F7FA] dark:bg-[#0A2540]/20 rounded-2xl p-6" data-testid={`review-${review.id}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-[#3B82F6] to-[#2563EB] rounded-full flex items-center justify-center text-white font-semibold">
+                        {review.user_name?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-[#0A2540] dark:text-white">{review.user_name}</p>
+                        <p className="text-xs text-[#475569] dark:text-gray-400">
+                          {new Date(review.created_at).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-[#FBBF24] text-[#FBBF24]' : 'text-gray-300'}`} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[#475569] dark:text-gray-300 ml-13">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* AI Recommendations Section */}
+        {(aiLoading || aiRecommendations.length > 0) && (
+          <section className="py-12 border-t border-black/5 dark:border-white/10" data-testid="ai-recommendations-section">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+              </div>
+              <div>
+                <h2
+                  className="text-2xl sm:text-3xl font-medium text-[#0A2540] dark:text-white"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  AI Tavsiyalari
+                </h2>
+                {aiReasoning && (
+                  <p className="text-sm text-[#475569] dark:text-gray-400 italic">"{aiReasoning}"</p>
+                )}
+              </div>
+            </div>
+
+            {aiLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-[#F5F7FA] dark:bg-[#0A2540]/20 rounded-3xl animate-pulse h-96"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                {aiRecommendations.map((recProduct) => (
+                  <ProductCard key={recProduct.id} product={recProduct} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

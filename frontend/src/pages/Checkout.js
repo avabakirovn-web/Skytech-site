@@ -261,20 +261,113 @@ const Checkout = () => {
                 </h3>
                 <div className="space-y-3">
                   {[
-                    { id: 'card', name: 'Bank kartasi (Visa, Mastercard)' },
-                    { id: 'apple_pay', name: 'Apple Pay' },
-                    { id: 'google_pay', name: 'Google Pay' },
-                    { id: 'paypal', name: 'PayPal' },
-                    { id: 'cash', name: 'Yetkazib berishda naqd' }
+                    { id: 'card', name: 'Bank kartasi', desc: 'Visa, Mastercard, UzCard, Humo', logos: ['💳'] },
+                    { id: 'apple_pay', name: 'Apple Pay', desc: "Apple qurilmangiz orqali", logos: [''] },
+                    { id: 'google_pay', name: 'Google Pay', desc: "Android qurilmangiz orqali", logos: ['G'] },
+                    { id: 'paypal', name: 'PayPal', desc: "Xalqaro to'lov", logos: ['P'] },
+                    { id: 'cash', name: 'Yetkazib berishda naqd', desc: 'Mahsulotni olib, to\'lang', logos: ['💵'] }
                   ].map((method) => (
-                    <label key={method.id} className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
-                      formData.payment_method === method.id ? 'border-[#3B82F6] bg-[#3B82F6]/5' : 'border-black/10 dark:border-white/10 hover:border-[#3B82F6]/50'
+                    <label key={method.id} className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      formData.payment_method === method.id ? 'border-[#3B82F6] bg-[#3B82F6]/5 shadow-md' : 'border-black/10 dark:border-white/10 hover:border-[#3B82F6]/50'
                     }`} data-testid={`payment-${method.id}`}>
-                      <input type="radio" name="payment_method" value={method.id} checked={formData.payment_method === method.id} onChange={handleChange} className="w-4 h-4 text-[#3B82F6]" />
-                      <span className="text-[#0A2540] dark:text-white font-medium">{method.name}</span>
+                      <input type="radio" name="payment_method" value={method.id} checked={formData.payment_method === method.id} onChange={handleChange} className="w-5 h-5 text-[#3B82F6]" />
+                      <div className="w-12 h-12 bg-[#F5F7FA] dark:bg-white/10 rounded-xl flex items-center justify-center text-2xl">
+                        {method.logos[0]}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[#0A2540] dark:text-white font-semibold">{method.name}</p>
+                        <p className="text-sm text-[#475569] dark:text-gray-400">{method.desc}</p>
+                      </div>
                     </label>
                   ))}
                 </div>
+
+                {/* Card Details (only show when card is selected) */}
+                {formData.payment_method === 'card' && (
+                  <div className="mt-6 p-6 bg-gradient-to-br from-[#3B82F6] to-[#0A2540] rounded-2xl text-white" data-testid="card-details">
+                    {/* Visual Card */}
+                    <div className="mb-6">
+                      <div className="flex justify-between items-center mb-8">
+                        <p className="text-sm opacity-80">Bank kartasi</p>
+                        <p className="text-2xl font-bold italic">VISA</p>
+                      </div>
+                      <p className="text-xl tracking-widest mb-4">
+                        {formData.card_number ? formData.card_number.replace(/(.{4})/g, '$1 ').trim() : '•••• •••• •••• ••••'}
+                      </p>
+                      <div className="flex justify-between text-sm">
+                        <div>
+                          <p className="opacity-70 text-xs">KARTA EGASI</p>
+                          <p className="font-medium uppercase">{formData.card_name || 'ISMINGIZ'}</p>
+                        </div>
+                        <div>
+                          <p className="opacity-70 text-xs">AMAL QILISH</p>
+                          <p className="font-medium">{formData.card_expiry || 'OY/YIL'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Inputs */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-white/90 mb-1">Karta raqami</label>
+                        <input
+                          type="text"
+                          maxLength="16"
+                          placeholder="1234 5678 9012 3456"
+                          value={formData.card_number || ''}
+                          onChange={(e) => setFormData({ ...formData, card_number: e.target.value.replace(/\D/g, '') })}
+                          className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 placeholder-white/50 text-white outline-none focus:bg-white/20"
+                          data-testid="card-number"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/90 mb-1">Karta egasi</label>
+                        <input
+                          type="text"
+                          placeholder="ISMINGIZ FAMILIYANGIZ"
+                          value={formData.card_name || ''}
+                          onChange={(e) => setFormData({ ...formData, card_name: e.target.value })}
+                          className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 placeholder-white/50 text-white outline-none focus:bg-white/20 uppercase"
+                          data-testid="card-name"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-white/90 mb-1">Amal qiladi</label>
+                          <input
+                            type="text"
+                            maxLength="5"
+                            placeholder="MM/YY"
+                            value={formData.card_expiry || ''}
+                            onChange={(e) => {
+                              let val = e.target.value.replace(/\D/g, '');
+                              if (val.length >= 2) val = val.slice(0, 2) + '/' + val.slice(2, 4);
+                              setFormData({ ...formData, card_expiry: val });
+                            }}
+                            className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 placeholder-white/50 text-white outline-none focus:bg-white/20"
+                            data-testid="card-expiry"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-white/90 mb-1">CVV</label>
+                          <input
+                            type="password"
+                            maxLength="3"
+                            placeholder="•••"
+                            value={formData.card_cvv || ''}
+                            onChange={(e) => setFormData({ ...formData, card_cvv: e.target.value.replace(/\D/g, '') })}
+                            className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 placeholder-white/50 text-white outline-none focus:bg-white/20"
+                            data-testid="card-cvv"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-white/70 mt-3 flex items-center gap-2">
+                      🔒 Kartangiz ma'lumotlari xavfsiz himoyalangan
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex gap-3 mt-6">
                   <Button onClick={() => setStep(1)} className="flex-1 bg-transparent border border-[#0A2540] text-[#0A2540] dark:text-white dark:border-white hover:bg-[#0A2540] hover:text-white rounded-full py-3">
                     Orqaga
