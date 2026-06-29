@@ -310,7 +310,7 @@ const ProductDetail = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {reviews.map((review) => (
+              {reviews?.map((review) => (
                 <div key={review.id} className="bg-[#F5F7FA] dark:bg-[#0A2540]/20 rounded-2xl p-6" data-testid={`review-${review.id}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ const ProductDetail = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
+                      {[...Array(5)]?.map((_, i) => (
                         <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-[#FBBF24] text-[#FBBF24]' : 'text-gray-300'}`} />
                       ))}
                     </div>
@@ -359,7 +359,7 @@ const ProductDetail = () => {
 
             {aiLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(4)].map((_, i) => (
+                {[...Array(4)]?.map((_, i) => (
                   <div key={i} className="bg-[#F5F7FA] dark:bg-[#0A2540]/20 rounded-3xl animate-pulse h-96"></div>
                 ))}
               </div>
