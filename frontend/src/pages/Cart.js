@@ -26,11 +26,11 @@ const Cart = () => {
     try {
       setLoading(true);
       if (cart.items && cart.items.length > 0) {
-        const productPromises = cart.items.map(item =>
+        const productPromises = cart.items?.map(item =>
           axios.get(`${API}/products/${item.product_id}`)
         );
         const responses = await Promise.all(productPromises);
-        setProducts(responses.map(res => res.data));
+        setProducts(responses?.map(res => res.data));
       } else {
         setProducts([]);
       }
