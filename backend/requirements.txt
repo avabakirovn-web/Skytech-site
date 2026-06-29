@@ -7,4 +7,6 @@ slowapi
 motor
 pydantic
 httpx
-
+bcrypt
+pyjwt
+python-multipart
