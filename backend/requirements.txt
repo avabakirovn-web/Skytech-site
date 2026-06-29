@@ -3,3 +3,7 @@ uvicorn
 pymongo
 requests
 python-dotenv
+slowapi
+motor
+pydantic
+
