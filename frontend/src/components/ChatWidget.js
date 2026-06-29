@@ -90,7 +90,7 @@ const ChatWidget = () => {
                 </p>
               </div>
             ) : (
-              messages.map((msg) => (
+              messages?.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.is_support ? 'justify-start' : 'justify-end'}`}
