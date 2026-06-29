@@ -80,7 +80,7 @@ const Products = () => {
                 <div>
                   <h4 className="font-medium text-[#0A2540] dark:text-white mb-3">Kategoriyalar</h4>
                   <div className="space-y-2">
-                    {categories.map((cat) => (
+                    {categories?.map((cat) => (
                       <button
                         key={cat.id}
                         onClick={() => setFilters({ ...filters, category: cat.id })}
@@ -109,7 +109,7 @@ const Products = () => {
               </div>
             ) : products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product, index) => (
+                {products?.map((product, index) => (
                   <motion.div
                     key={product.id}
                     initial={{ opacity: 0, y: 20 }}
