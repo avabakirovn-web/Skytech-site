@@ -140,7 +140,7 @@ const ProductCard = ({ product }) => {
         {/* Rating */}
         <div className="flex items-center gap-2 mb-2">
           <div className="flex">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(5)]?.map((_, i) => (
               <span
                 key={i}
                 className={`text-lg ${
