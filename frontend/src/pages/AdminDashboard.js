@@ -186,7 +186,7 @@ const AdminDashboard = () => {
                   <h3 className="text-xl font-semibold text-[#0A2540] dark:text-white mb-6">So'nggi buyurtmalar</h3>
                   {stats.recent_orders?.length > 0 ? (
                     <div className="space-y-3">
-                      {stats.recent_orders.slice(0, 5).map((order) => (
+                      {stats.recent_orders.slice(0, 5)?.map((order) => (
                         <div key={order.id} className="flex items-center justify-between p-4 bg-[#F5F7FA] dark:bg-white/5 rounded-xl">
                           <div>
                             <p className="font-medium text-[#0A2540] dark:text-white">#{order.id.slice(0, 8)}</p>
@@ -211,7 +211,7 @@ const AdminDashboard = () => {
                   <p className="text-center text-[#475569] dark:text-gray-300 py-12">Buyurtmalar yo'q</p>
                 ) : (
                   <div className="space-y-4">
-                    {orders.map((order) => (
+                    {orders?.map((order) => (
                       <div key={order.id} className="p-6 bg-[#F5F7FA] dark:bg-white/5 rounded-xl">
                         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                           <div>
